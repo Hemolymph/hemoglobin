@@ -24,15 +24,15 @@ impl Ternary {
     /// A ternary OR which outputs the highest-valued result between `self` and `b`, where a `Match` is considered highest and `NotHave` is considered lowest.
     #[must_use]
     pub fn is_true(self) -> bool {
-        self == Ternary::True
+        self == Self::True
     }
     #[must_use]
     pub fn is_false(self) -> bool {
-        self == Ternary::False
+        self == Self::False
     }
     #[must_use]
     pub fn is_void(self) -> bool {
-        self == Ternary::Void
+        self == Self::Void
     }
     /// A ternary OR which outputs the highest-valued result between `self` and `b`, where a `Match` is considered highest and `NotHave` is considered lowest.
     #[must_use]

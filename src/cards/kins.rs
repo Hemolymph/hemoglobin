@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use regex::Regex;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::Visitor};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Represents a Kin. To represent the Kin Tree, some variants have an Option. The None variant represents the parent Kin, while the Some variant represents a child.
@@ -22,6 +22,7 @@ impl Display for Kin {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Undead => write!(f, "Undead Kin"),
+            Self::Bird => write!(f, "Bird Kin"),
             Self::Assassin => write!(f, "Assassin Kin"),
             Self::Reptile => write!(f, "Reptile Kin"),
             Self::CultOfNa => write!(f, "Cult of Nä Kin"),
@@ -47,6 +48,7 @@ impl Kin {
     pub fn get_name(self) -> &'static str {
         match self {
             Self::Assassin => "assassin",
+            Self::Bird => "bird",
             Self::CultOfNa => "cult of na",
             Self::Reptile => "reptile",
             Self::Sorcery => "sorcery",
@@ -90,11 +92,7 @@ impl Kin {
     #[must_use]
     pub fn get_equalness(self, other: Self) -> f64 {
         if self.is_same_or_child(other) {
-            if self == other {
-                1.0
-            } else {
-                0.5
-            }
+            if self == other { 1.0 } else { 0.5 }
         } else {
             0.0
         }
@@ -184,11 +182,7 @@ impl InsectKin {
 
     #[must_use]
     pub fn get_equalness(self, other: Self) -> f64 {
-        if self == other {
-            1.0
-        } else {
-            0.0
-        }
+        if self == other { 1.0 } else { 0.0 }
     }
 }
 
@@ -223,11 +217,7 @@ impl PiezanKin {
     }
     #[must_use]
     pub fn get_equalness(self, other: Self) -> f64 {
-        if self == other {
-            1.0
-        } else {
-            0.0
-        }
+        if self == other { 1.0 } else { 0.0 }
     }
 }
 
@@ -253,11 +243,7 @@ impl MachineKin {
     }
     #[must_use]
     pub fn get_equalness(self, other: Self) -> f64 {
-        if self == other {
-            1.0
-        } else {
-            0.0
-        }
+        if self == other { 1.0 } else { 0.0 }
     }
 }
 
