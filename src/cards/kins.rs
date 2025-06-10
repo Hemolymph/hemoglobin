@@ -6,6 +6,7 @@ use serde::{de::Visitor, Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Represents a Kin. To represent the Kin Tree, some variants have an Option. The None variant represents the parent Kin, while the Some variant represents a child.
 pub enum Kin {
+    Bird,
     Assassin,
     Undead,
     Reptile,
