@@ -117,6 +117,7 @@ impl Kin {
             "blue kingdom" => Some(Self::Piezan(Some(PiezanKin::BlueKingdom))),
             "green kingdom" => Some(Self::Piezan(Some(PiezanKin::GreenKingdom))),
             "black kingdom" => Some(Self::Piezan(Some(PiezanKin::BlackKingdom))),
+            "bird" => Some(Self::Bird),
             _ => None,
         }
     }
