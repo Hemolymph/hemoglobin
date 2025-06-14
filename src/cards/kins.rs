@@ -65,14 +65,6 @@ impl Kin {
     pub fn is_same_or_child(self, other: Self) -> bool {
         #[allow(clippy::match_same_arms)]
         match (self, other) {
-            // Childless kins
-            (Self::Undead, Self::Undead) => true,
-            (Self::Assassin, Self::Assassin) => true,
-            (Self::Reptile, Self::Reptile) => true,
-            (Self::Sorcery, Self::Sorcery) => true,
-            (Self::Their, Self::Their) => true,
-            (_, Self::Sorcery) | (Self::Sorcery, _) => false,
-            (_, Self::Their) | (Self::Their, _) => false,
             // Insect kins
             (Self::Insect(_), Self::Insect(None)) => true,
             (Self::Insect(None), Self::Insect(_)) => false,
@@ -85,6 +77,8 @@ impl Kin {
             (Self::Machine(_), Self::Machine(None)) => true,
             (Self::Machine(None), Self::Machine(_)) => false,
             (Self::Machine(Some(a)), Self::Machine(Some(b))) => a == b,
+            // Simple Kins
+            (a, b) if a == b => true,
             _ => false,
         }
     }
