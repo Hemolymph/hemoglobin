@@ -5,6 +5,7 @@ use std::{
     cmp::Ordering,
     fmt::{Debug, Display},
     num::TryFromIntError,
+    str::FromStr,
 };
 
 use serde::{
@@ -17,6 +18,27 @@ use serde::{
 pub enum MaybeImprecise {
     Precise(MaybeVar),
     Imprecise(Comparison),
+}
+
+#[derive(Debug)]
+pub enum MaybeImpreciseParseError {
+    MaybeVar(MaybeVarParseError),
+    Comparison(ComparisonParseError),
+}
+
+impl FromStr for MaybeImprecise {
+    type Err = MaybeImpreciseParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<MaybeVar>()
+            .map(Self::Precise)
+            .map_err(MaybeImpreciseParseError::MaybeVar)
+            .or_else(|_| {
+                s.parse::<Comparison>()
+                    .map(Self::Imprecise)
+                    .map_err(MaybeImpreciseParseError::Comparison)
+            })
+    }
 }
 
 impl Default for MaybeImprecise {
@@ -66,6 +88,32 @@ impl Default for MaybeVar {
     }
 }
 
+#[derive(Debug)]
+pub enum MaybeVarParseError {
+    TooManyCharacters,
+    EmptyString,
+}
+
+impl FromStr for MaybeVar {
+    type Err = MaybeVarParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(num) = s.parse() {
+            Ok(Self::Const(num))
+        } else {
+            if s.chars().count() > 1 {
+                return Err(MaybeVarParseError::TooManyCharacters);
+            }
+
+            let Some(char) = s.chars().next() else {
+                return Err(MaybeVarParseError::EmptyString);
+            };
+
+            Ok(Self::Var(char))
+        }
+    }
+}
+
 impl MaybeVar {
     /// If a number is a variable, it will usually be assumed to be zero. This might change in the future.
     #[must_use]
@@ -103,6 +151,46 @@ pub enum Comparison {
     NotEqual(usize),
 }
 
+impl FromStr for Comparison {
+    type Err = ComparisonParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<usize>().map_or_else(
+            |_| {
+                #[allow(clippy::option_if_let_else)]
+                if let Some(end) = s.strip_prefix(">=") {
+                    end.parse::<usize>()
+                        .map(Self::GreaterThanOrEqual)
+                        .map_err(|_| ComparisonParseError)
+                } else if let Some(end) = s.strip_prefix("<=") {
+                    end.parse::<usize>()
+                        .map(Self::LowerThanOrEqual)
+                        .map_err(|_| ComparisonParseError)
+                } else if let Some(end) = s.strip_prefix('>') {
+                    end.parse::<usize>()
+                        .map(Self::GreaterThan)
+                        .map_err(|_| ComparisonParseError)
+                } else if let Some(end) = s.strip_prefix('<') {
+                    end.parse::<usize>()
+                        .map(Self::LowerThan)
+                        .map_err(|_| ComparisonParseError)
+                } else if let Some(end) = s.strip_prefix('=') {
+                    end.parse::<usize>()
+                        .map(Self::Equal)
+                        .map_err(|_| ComparisonParseError)
+                } else if let Some(end) = s.strip_prefix("!=") {
+                    end.parse::<usize>()
+                        .map(Self::NotEqual)
+                        .map_err(|_| ComparisonParseError)
+                } else {
+                    Err(ComparisonParseError)
+                }
+            },
+            |x| Ok(Self::Equal(x)),
+        )
+    }
+}
+
 impl Display for Comparison {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -116,7 +204,14 @@ impl Display for Comparison {
     }
 }
 
-pub struct InvalidComparisonString;
+#[derive(Debug)]
+pub struct ComparisonParseError;
+
+#[deprecated(
+    since = "0.9.6",
+    note = "This type has been renamed to `ComparisonParseError`"
+)]
+pub type InvalidComparisonString = ComparisonParseError;
 
 impl Comparison {
     pub fn compare<T: Compare + Debug>(&self, a: &T) -> Ternary {
@@ -132,40 +227,12 @@ impl Comparison {
 
     /// # Errors
     /// When given an invalid comparison operator. Importantly, adding spaces within the operator counts as making it invalid.
-    pub fn from_string(string: &str) -> Result<Self, InvalidComparisonString> {
-        string.parse::<usize>().map_or_else(
-            |_| {
-                #[allow(clippy::option_if_let_else)]
-                if let Some(end) = string.strip_prefix(">=") {
-                    end.parse::<usize>()
-                        .map(Self::GreaterThanOrEqual)
-                        .map_err(|_| InvalidComparisonString)
-                } else if let Some(end) = string.strip_prefix("<=") {
-                    end.parse::<usize>()
-                        .map(Self::LowerThanOrEqual)
-                        .map_err(|_| InvalidComparisonString)
-                } else if let Some(end) = string.strip_prefix('>') {
-                    end.parse::<usize>()
-                        .map(Self::GreaterThan)
-                        .map_err(|_| InvalidComparisonString)
-                } else if let Some(end) = string.strip_prefix('<') {
-                    end.parse::<usize>()
-                        .map(Self::LowerThan)
-                        .map_err(|_| InvalidComparisonString)
-                } else if let Some(end) = string.strip_prefix('=') {
-                    end.parse::<usize>()
-                        .map(Self::Equal)
-                        .map_err(|_| InvalidComparisonString)
-                } else if let Some(end) = string.strip_prefix("!=") {
-                    end.parse::<usize>()
-                        .map(Self::NotEqual)
-                        .map_err(|_| InvalidComparisonString)
-                } else {
-                    Err(InvalidComparisonString)
-                }
-            },
-            |x| Ok(Self::Equal(x)),
-        )
+    #[deprecated(
+        since = "0.9.6",
+        note = "Use FromStr::from_str or String::parse instead"
+    )]
+    pub fn from_string(string: &str) -> Result<Self, ComparisonParseError> {
+        string.parse()
     }
 }
 
@@ -228,7 +295,7 @@ impl<'de> Deserialize<'de> for MaybeImprecise {
             {
                 str_as_maybe_var(v).map_or_else(
                     || {
-                        Comparison::from_string(v).map_or_else(
+                        v.parse().map_or_else(
                             |_| Err(E::custom("expected a bloodless number or a comparison")),
                             |x| Ok(Self::Value::Imprecise(x)),
                         )
@@ -241,7 +308,7 @@ impl<'de> Deserialize<'de> for MaybeImprecise {
             where
                 E: Error,
             {
-                u64_as_maybe_var(v).map(MaybeImprecise::Precise).map_err(|_| {
+                v.try_into().map(MaybeImprecise::Precise).map_err(|_| {
                     E::custom(
                         "converted from a value greater than the current architecture's pointer size",
                     )
@@ -277,7 +344,7 @@ fn deserialize_maybe_var<'de, D: Deserializer<'de>>(deserializer: D) -> Result<M
         where
             E: Error,
         {
-            u64_as_maybe_var(v).map_err(|_| {
+            v.try_into().map_err(|_| {
                 E::custom(
                     "converted from a value greater than the current architecture's pointer size",
                 )
@@ -288,13 +355,18 @@ fn deserialize_maybe_var<'de, D: Deserializer<'de>>(deserializer: D) -> Result<M
     deserializer.deserialize_any(MvVisitor)
 }
 
-fn u64_as_maybe_var(v: u64) -> Result<MaybeVar, TryFromIntError> {
-    match v.try_into() {
-        Ok(number) => Ok(MaybeVar::Const(number)),
-        Err(x) => Err(x),
+impl TryFrom<u64> for MaybeVar {
+    type Error = TryFromIntError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        match value.try_into() {
+            Ok(number) => Ok(Self::Const(number)),
+            Err(x) => Err(x),
+        }
     }
 }
 
+/// This function does _not_ parse a number, only checks if a string is a character and puts it into a `MaybeVar` if it is.
 fn str_as_maybe_var(v: &str) -> Option<MaybeVar> {
     v.chars()
         .next()
